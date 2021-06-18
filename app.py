@@ -82,14 +82,14 @@ def webhook():
 
     if side == "BUY":
         client.futures_cancel_all_open_orders(symbol="ETHUSDT")
-        long_buy_response = limit_order(side, 0.001, "ETHUSDT", open_price)
-        long_tp_response = take_profit_order("SELL", 0.001, "ETHUSDT", tp_price)
-        long_sl_response = stop_order("SELL", 0.001, "ETHUSDT", sl_price)
+        long_buy_response = limit_order(side, ordersize, "ETHUSDT", open_price)
+        long_tp_response = take_profit_order("SELL", ordersize, "ETHUSDT", open_price)
+        long_sl_response = stop_order("SELL", ordersize, "ETHUSDT", sl_price)
     elif side == "SELL":
         client.futures_cancel_all_open_orders(symbol="ETHUSDT")
-        short_buy_response = limit_order(side, 0.054, "ETHUSDT", 2600)
-        short_tp_response = take_profit_order("BUY", 0.054, "ETHUSDT", 2300)
-        short_sl_response = stop_order("BUY", 0.054, "ETHUSDT", 2650)
+        short_buy_response = limit_order(side, ordersize, "ETHUSDT", open_price)
+        short_tp_response = take_profit_order("BUY", ordersize, "ETHUSDT", open_price)
+        short_sl_response = stop_order("BUY", ordersize, "ETHUSDT", sl_price)
     elif side == "CLOSE":
         client.futures_cancel_all_open_orders(symbol="ETHUSDT")
     #if long_buy_response:
