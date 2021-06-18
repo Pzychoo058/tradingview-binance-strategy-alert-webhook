@@ -1,31 +1,68 @@
-import json, config
+import json, config, config_erik
 from flask import Flask, request, jsonify, render_template
 from binance.client import Client
 from binance.enums import *
 
 app = Flask(__name__)
 
-client = Client(config.API_KEY, config.API_SECRET, tld='us')
+client = Client(config.API_KEY, config.API_SECRET)
+client_erik = Client(config_erik.API_KEY, config_erik.API_SECRET)
+margin = client.futures_account_balance()
+margin_erik = client_erik.futures_account_balance()
 
-def order(side, quantity, symbol, order_type=ORDER_TYPE_MARKET):
+
+def get_positionsize(open_price, cash, leverage=25, risk=2):
+    marge = ((cash * risk) / 100) * leverage
+    possize = marge / open_price
+    return possize
+
+
+def limit_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_LIMIT, tif=TIME_IN_FORCE_GTC):
     try:
         print(f"sending order {order_type} - {side} {quantity} {symbol}")
-        order = client.create_order(symbol=symbol, side=side, type=order_type, quantity=quantity)
+        limit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
+                                                  price=price, timeinforce=tif)
     except Exception as e:
         print("an exception occured - {}".format(e))
         return False
 
-    return order
+    return limit_order
+
+
+def stop_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_STOP):
+    try:
+        print(f"sending order {order_type} - {side} {quantity} {symbol}")
+        stop_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
+                                                 stopPrice=price, price=price)
+    except Exception as e:
+        print("an exception occured - {}".format(e))
+        return False
+
+    return stop_order
+
+
+def take_profit_order(side, quantity, symbol, price, time=TIME_IN_FORCE_GTC, order_type=FUTURE_ORDER_TYPE_TAKE_PROFIT):
+    try:
+        print(f"sending order {order_type} - {side} {quantity} {symbol}")
+        take_profit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
+                                                        stopPrice=price, price=price)
+    except Exception as e:
+        print("an exception occured - {}".format(e))
+        return False
+
+    return take_profit_order
+
 
 @app.route('/')
 def welcome():
     return render_template('index.html')
 
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    #print(request.data)
+    # print(request.data)
     data = json.loads(request.data)
-    
+
     if data['passphrase'] != config.WEBHOOK_PASSPHRASE:
         return {
             "code": "error",
@@ -33,10 +70,34 @@ def webhook():
         }
 
     side = data['strategy']['order_action'].upper()
-    quantity = data['strategy']['order_contracts']
-    order_response = order(side, quantity, "DOGEUSD")
+    open_price = data['strategy']['entry_price']
+    tp_price = data['strategy']['tp_price']
+    sl_price = data['strategy']['sl_price']
+    cash = float(margin[1]['balance'])
+    cash_erik = float(margin_erik[1]['balance'])
+    print(cash)
+    print(cash_erik)
+    ordersize = round(get_positionsize(open_price, cash), 3)
+    ordersize_erik = round(get_positionsize(open_price, cash_erik), 3)
 
-    if order_response:
+    if side == "BUY":
+        client.futures_cancel_all_open_orders(symbol="ETHUSDT")
+        long_buy_response = limit_order(side, 0.001, "ETHUSDT", open_price)
+        long_tp_response = take_profit_order("SELL", 0.001, "ETHUSDT", tp_price)
+        long_sl_response = stop_order("SELL", 0.001, "ETHUSDT", sl_price)
+    elif side == "SELL":
+        client.futures_cancel_all_open_orders(symbol="ETHUSDT")
+        short_buy_response = limit_order(side, 0.054, "ETHUSDT", 2600)
+        short_tp_response = take_profit_order("BUY", 0.054, "ETHUSDT", 2300)
+        short_sl_response = stop_order("BUY", 0.054, "ETHUSDT", 2650)
+    elif side == "CLOSE":
+        client.futures_cancel_all_open_orders(symbol="ETHUSDT")
+    #if long_buy_response:
+        return {
+            "code": "success",
+            "message": "order executed"
+        }
+    if short_buy_response:
         return {
             "code": "success",
             "message": "order executed"
@@ -44,7 +105,9 @@ def webhook():
     else:
         print("order failed")
 
-        return {
-            "code": "error",
-            "message": "order failed"
-        }
+    return {
+        "code": "error",
+        "message": "order failed"
+    }
+
+
