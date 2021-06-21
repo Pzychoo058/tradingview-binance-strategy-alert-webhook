@@ -75,7 +75,6 @@ def webhook():
             "message": "Nice try, invalid passphrase"
         }
 
-    side = data['strategy']['order_action'].upper()
     market_position = data['strategy']['market_position'].upper()
     open_price = data['strategy']['entry_price']
     tp_price = data['strategy']['tp_price']
@@ -90,14 +89,14 @@ def webhook():
     # ordersize = round(get_positionsize(open_price, cash), 3)
     # ordersize_erik = round(get_positionsize(open_price, cash_erik), 3)
 
-    if side == "BUY":
+    if market_position == "LONG":
         client_erik.futures_cancel_all_open_orders(symbol="ETHUSDT")
-        long_buy_response = limit_order(side, ordersize, "ETHUSDT", open_price)
+        long_buy_response = limit_order("BUY", ordersize, "ETHUSDT", open_price)
         long_tp_response = take_profit_order("SELL", ordersize, "ETHUSDT", tp_price)
         long_sl_response = stop_order("SELL", ordersize, "ETHUSDT", sl_price)
-    elif side == "SELL":
+    elif market_position == "SHORT":
         client_erik.futures_cancel_all_open_orders(symbol="ETHUSDT")
-        short_buy_response = limit_order(side, ordersize, "ETHUSDT", open_price)
+        short_buy_response = limit_order("SELL", ordersize, "ETHUSDT", open_price)
         short_tp_response = take_profit_order("BUY", ordersize, "ETHUSDT", tp_price)
         short_sl_response = stop_order("BUY", ordersize, "ETHUSDT", sl_price)
     elif market_position == "FLAT":
