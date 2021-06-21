@@ -101,6 +101,8 @@ def webhook():
         short_sl_response = stop_order("BUY", ordersize, "ETHUSDT", sl_price)
     elif market_position == "FLAT":
         client_erik.futures_cancel_all_open_orders(symbol="ETHUSDT")
+        client_erik.futures_cancel_order(symbol="ETHUSDT")
+        client_erik.futures_cancel_orders(symbol="ETHUSDT")
 
     if long_buy_response:
         return {

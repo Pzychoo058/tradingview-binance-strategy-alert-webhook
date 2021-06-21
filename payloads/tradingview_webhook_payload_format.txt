@@ -24,6 +24,6 @@
         "sl_price": {{stop_loss}},
         "entry_price": {{entry_price}},
         "market_position": "{{strategy.market_position}}",
-        "market_position_size": {{strategy.market_position_size}},
+        "market_position_size": {{strategy.market_position_size}}
     }
 }
