@@ -81,6 +81,8 @@ def webhook():
     tp_price = data['strategy']['tp_price']
     sl_price = data['strategy']['sl_price']
     ordersize = data['strategy']['market_position_size']
+    long_buy_response = False
+    short_buy_response = False
     # cash = float(margin[1]['balance'])
     # cash_erik = float(margin_erik[1]['balance'])
     # print(cash)
@@ -100,22 +102,23 @@ def webhook():
         short_sl_response = stop_order("BUY", ordersize, "ETHUSDT", sl_price)
     elif market_position == "FLAT":
         client_erik.futures_cancel_all_open_orders(symbol="ETHUSDT")
-    # if long_buy_response:
-    #     return {
-    #         "code": "success",
-    #         "message": "order executed"
-    #     }
-    # if short_buy_response:
-    #     return {
-    #         "code": "success",
-    #         "message": "order executed"
-    #     }
+
+    if long_buy_response:
+        return {
+            "code": "success",
+            "message": "order executed"
+        }
+    if short_buy_response:
+        return {
+            "code": "success",
+            "message": "order executed"
+        }
     # else:
     #     print("order failed")
-    #
-    # return {
-    #     "code": "error",
-    #     "message": "order failed"
-    # }
+
+    return {
+        "code": "error",
+        "message": "order failed"
+    }
 
 
