@@ -11,10 +11,10 @@ client_erik = Client(config_erik.API_KEY, config_erik.API_SECRET)
 margin_erik = client_erik.futures_account_balance()
 
 
-def get_positionsize(open_price, cash, leverage=25, risk=2):
-    marge = ((cash * risk) / 100) * leverage
-    possize = marge / open_price
-    return possize
+# def get_positionsize(open_price, cash, leverage=25, risk=2):
+#     marge = ((cash * risk) / 100) * leverage
+#     possize = marge / open_price
+#     return possize
 
 
 def limit_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_LIMIT, tif=TIME_IN_FORCE_GTC):
@@ -69,7 +69,7 @@ def webhook():
     # print(request.data)
     data = json.loads(request.data)
 
-    if data['passphrase'] != config.WEBHOOK_PASSPHRASE:
+    if data['passphrase'] != config_erik.WEBHOOK_PASSPHRASE:
         return {
             "code": "error",
             "message": "Nice try, invalid passphrase"
@@ -80,7 +80,7 @@ def webhook():
     open_price = data['strategy']['entry_price']
     tp_price = data['strategy']['tp_price']
     sl_price = data['strategy']['sl_price']
-    ordersize = data['strategy']['market_position_size']
+    ordersize = round(data['strategy']['market_position_size'], 3)
     long_buy_response = False
     short_buy_response = False
     # cash = float(margin[1]['balance'])
