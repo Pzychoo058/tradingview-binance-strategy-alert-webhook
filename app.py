@@ -5,9 +5,9 @@ from binance.enums import *
 
 app = Flask(__name__)
 
-# client = Client(config.API_KEY, config.API_SECRET)
+client = Client(config.API_KEY, config.API_SECRET)
 client_erik = Client(config_erik.API_KEY, config_erik.API_SECRET)
-# margin = client.futures_account_balance()
+margin = client.futures_account_balance()
 margin_erik = client_erik.futures_account_balance()
 
 
@@ -20,43 +20,43 @@ margin_erik = client_erik.futures_account_balance()
 def limit_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_LIMIT, tif=TIME_IN_FORCE_GTC):
     try:
         print(f"sending order {order_type} - {side} {quantity} {symbol}")
-        # limit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
-        #                                             price=price, timeinforce=tif)
+        limit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
+                                                  price=price, timeinforce=tif)
         limit_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
                                                             price=price, timeinforce=tif)
     except Exception as e:
         print("an exception occured - {}".format(e))
         return False
 
-    return limit_order_erik
+    return limit_order_erik, limit_order
 
 
 def stop_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_STOP):
     try:
         print(f"sending order {order_type} - {side} {quantity} {symbol}")
-        # stop_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
-        #                                          stopPrice=price, price=price)
+        stop_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
+                                                 stopPrice=price, price=price)
         stop_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
                                                            stopPrice=price, price=price)
     except Exception as e:
         print("an exception occured - {}".format(e))
         return False
 
-    return stop_order_erik
+    return stop_order_erik, stop_order
 
 
 def take_profit_order(side, quantity, symbol, price, time=TIME_IN_FORCE_GTC, order_type=FUTURE_ORDER_TYPE_TAKE_PROFIT):
     try:
         print(f"sending order {order_type} - {side} {quantity} {symbol}")
-        # take_profit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
-        #                                                 stopPrice=price, price=price)
+        take_profit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
+                                                        stopPrice=price, price=price)
         take_profit_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
                                                                   stopPrice=price, price=price)
     except Exception as e:
         print("an exception occured - {}".format(e))
         return False
 
-    return take_profit_order_erik
+    return take_profit_order_erik, take_profit_order
 
 
 @app.route('/')
@@ -91,11 +91,13 @@ def webhook():
 
     if market_position == "LONG":
         client_erik.futures_cancel_all_open_orders(symbol="ETHUSDT")
+        client.futures_cancel_all_open_orders(symbol="ETHUSDT")
         long_buy_response = limit_order("BUY", ordersize, "ETHUSDT", open_price)
         long_tp_response = take_profit_order("SELL", ordersize, "ETHUSDT", tp_price)
         long_sl_response = stop_order("SELL", ordersize, "ETHUSDT", sl_price)
     elif market_position == "SHORT":
         client_erik.futures_cancel_all_open_orders(symbol="ETHUSDT")
+        client.futures_cancel_all_open_orders(symbol="ETHUSDT")
         short_buy_response = limit_order("SELL", ordersize, "ETHUSDT", open_price)
         short_tp_response = take_profit_order("BUY", ordersize, "ETHUSDT", tp_price)
         short_sl_response = stop_order("BUY", ordersize, "ETHUSDT", sl_price)
