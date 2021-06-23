@@ -31,13 +31,13 @@ def limit_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_LIMI
     return limit_order_erik, limit_order
 
 
-def stop_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_STOP):
+def stop_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_STOP_MARKET):
     try:
         print(f"sending order {order_type} - {side} {quantity} {symbol}")
-        stop_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
-                                                 stopPrice=price, price=price)
-        stop_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
-                                                           stopPrice=price, price=price)
+        stop_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
+                                                 stopPrice=price, workingType="MARK_PRICE")
+        stop_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
+                                                 stopPrice=price, workingType="MARK_PRICE")
     except Exception as e:
         print("an exception occured - {}".format(e))
         return False
@@ -45,13 +45,13 @@ def stop_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_STOP)
     return stop_order_erik, stop_order
 
 
-def take_profit_order(side, quantity, symbol, price, time=TIME_IN_FORCE_GTC, order_type=FUTURE_ORDER_TYPE_TAKE_PROFIT):
+def take_profit_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_TAKE_PROFIT_MARKET):
     try:
         print(f"sending order {order_type} - {side} {quantity} {symbol}")
-        take_profit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
-                                                        stopPrice=price, price=price)
-        take_profit_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
-                                                                  stopPrice=price, price=price)
+        take_profit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
+                                                        stopPrice=price)
+        take_profit_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
+                                                                  stopPrice=price)
     except Exception as e:
         print("an exception occured - {}".format(e))
         return False
@@ -82,6 +82,7 @@ def webhook():
     ordersize = round(data['strategy']['market_position_size'], 3)
     long_buy_response = False
     short_buy_response = False
+    symbol = "ETHUSDT"
     # cash = float(margin[1]['balance'])
     # cash_erik = float(margin_erik[1]['balance'])
     # print(cash)
@@ -90,18 +91,54 @@ def webhook():
     # ordersize_erik = round(get_positionsize(open_price, cash_erik), 3)
 
     if market_position == "LONG":
-        client_erik.futures_cancel_all_open_orders(symbol="ETHUSDT")
-        client.futures_cancel_all_open_orders(symbol="ETHUSDT")
-        long_buy_response = limit_order("BUY", ordersize, "ETHUSDT", open_price)
-        long_tp_response = take_profit_order("SELL", ordersize, "ETHUSDT", tp_price)
-        long_sl_response = stop_order("SELL", ordersize, "ETHUSDT", sl_price)
+        client_erik.futures_cancel_all_open_orders(symbol=symbol)
+        client.futures_cancel_all_open_orders(symbol=symbol)
+        long_buy_response = limit_order("BUY", ordersize, symbol, open_price)
+        long_tp_response = take_profit_order("SELL", ordersize, symbol, tp_price)
+        long_sl_response = stop_order("SELL", ordersize, symbol, sl_price)
     elif market_position == "SHORT":
-        client_erik.futures_cancel_all_open_orders(symbol="ETHUSDT")
-        client.futures_cancel_all_open_orders(symbol="ETHUSDT")
-        short_buy_response = limit_order("SELL", ordersize, "ETHUSDT", open_price)
-        short_tp_response = take_profit_order("BUY", ordersize, "ETHUSDT", tp_price)
-        short_sl_response = stop_order("BUY", ordersize, "ETHUSDT", sl_price)
-    # elif market_position == "FLAT":
+        client_erik.futures_cancel_all_open_orders(symbol=symbol)
+        client.futures_cancel_all_open_orders(symbol=symbol)
+        short_buy_response = limit_order("SELL", ordersize, symbol, open_price)
+        short_tp_response = take_profit_order("BUY", ordersize, symbol, tp_price)
+        short_sl_response = stop_order("BUY", ordersize, symbol, sl_price)
+    elif market_position == "SL":
+        open_orders = client.futures_get_open_orders(symbol=symbol)
+        open_orders_erik = client_erik.futures_get_open_orders(symbol=symbol)
+        if len(open_orders) == 1:
+            client.futures_cancel_all_open_orders(symbol=symbol)
+        else:
+            if open_orders[0]['type'] == "TAKE_PROFIT_MARKET" and open_orders[0]['symbol'] == symbol:
+                client.futures_cancel_order(orderId=open_orders[0]['orderId'], symbol=symbol)
+            elif open_orders[1]['type'] == "TAKE_PROFIT_MARKET" and open_orders[1]['symbol'] == symbol:
+                client.futures_cancel_order(orderId=open_orders[1]['orderId'], symbol=symbol)
+        if len(open_orders_erik) == 1:
+            client_erik.futures_cancel_all_open_orders(symbol=symbol)
+        else:
+            if open_orders_erik[0]['type'] == "TAKE_PROFIT_MARKET" and open_orders_erik[0]['symbol'] == symbol:
+                client_erik.futures_cancel_order(orderId=open_orders_erik[0]['orderId'], symbol=symbol)
+            elif open_orders_erik[1]['type'] == "TAKE_PROFIT_MARKET" and open_orders_erik[1]['symbol'] == symbol:
+                client_erik.futures_cancel_order(orderId=open_orders_erik[1]['orderId'], symbol=symbol)
+    elif market_position == "TP":
+        open_orders = client.futures_get_open_orders(symbol=symbol)
+        open_orders_erik = client_erik.futures_get_open_orders(symbol=symbol)
+        if len(open_orders) == 1:
+            client.futures_cancel_all_open_orders(symbol=symbol)
+        else:
+            if open_orders[0]['type'] == "STOP_MARKET" and open_orders[0]['symbol'] == symbol:
+                client.futures_cancel_order(orderId=open_orders[0]['orderId'], symbol=symbol)
+            elif open_orders[1]['type'] == "STOP_MARKET" and open_orders[1]['symbol'] == symbol:
+                client.futures_cancel_order(orderId=open_orders[1]['orderId'], symbol=symbol)
+        if len(open_orders_erik) == 1:
+            client_erik.futures_cancel_all_open_orders(symbol=symbol)
+        else:
+            if open_orders_erik[0]['type'] == "STOP_MARKET" and open_orders_erik[0]['symbol'] == symbol:
+                client_erik.futures_cancel_order(orderId=open_orders_erik[0]['orderId'], symbol=symbol)
+            elif open_orders_erik[1]['type'] == "STOP_MARKET" and open_orders_erik[1]['symbol'] == symbol:
+                client_erik.futures_cancel_order(orderId=open_orders_erik[1]['orderId'], symbol=symbol)
+        # print(open_orders)
+        # print(open_orders[0]['type'])
+        # print(len(open_orders))
     #     client_erik.futures_cancel_all_open_orders(symbol="ETHUSDT")
     #     client_erik.futures_cancel_order(symbol="ETHUSDT")
     #     client_erik.futures_cancel_orders(symbol="ETHUSDT")
@@ -123,5 +160,3 @@ def webhook():
         "code": "error",
         "message": "order failed"
     }
-
-
