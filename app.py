@@ -82,7 +82,7 @@ def webhook():
     ordersize = round(data['strategy']['market_position_size'], 3)
     long_buy_response = False
     short_buy_response = False
-    symbol = "ETHBUSD"
+    symbol = "ETHUSDT"
     # cash = float(margin[1]['balance'])
     # cash_erik = float(margin_erik[1]['balance'])
     # print(cash)
