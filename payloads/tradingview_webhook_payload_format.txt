@@ -27,3 +27,5 @@
         "market_position_size": {{strategy.market_position_size}}
     }
 }
+
+{ "passphrase": "IstmirLatte", "exchange": "{{exchange}}", "ticker": "{{ticker}}","strategy":{ "market_position": "{{strategy.market_position}}", "tp_price": {{take_profit}}, "sl_price": {{stop_loss}}, "entry_price": {{entry_price}},"market_position_size": {{strategy.market_position_size}}}}
