@@ -102,40 +102,40 @@ def webhook():
         short_buy_response = limit_order("SELL", ordersize, symbol, open_price)
         short_tp_response = take_profit_order("BUY", ordersize, symbol, tp_price)
         short_sl_response = stop_order("BUY", ordersize, symbol, sl_price)
-    elif market_position == "SL":
-        open_orders = client.futures_get_open_orders(symbol=symbol)
-        open_orders_erik = client_erik.futures_get_open_orders(symbol=symbol)
-        if len(open_orders) == 1:
-            client.futures_cancel_all_open_orders(symbol=symbol)
-        else:
-            if open_orders[0]['type'] == "TAKE_PROFIT_MARKET" and open_orders[0]['symbol'] == symbol:
-                client.futures_cancel_order(orderId=open_orders[0]['orderId'], symbol=symbol)
-            elif open_orders[1]['type'] == "TAKE_PROFIT_MARKET" and open_orders[1]['symbol'] == symbol:
-                client.futures_cancel_order(orderId=open_orders[1]['orderId'], symbol=symbol)
-        if len(open_orders_erik) == 1:
-            client_erik.futures_cancel_all_open_orders(symbol=symbol)
-        else:
-            if open_orders_erik[0]['type'] == "TAKE_PROFIT_MARKET" and open_orders_erik[0]['symbol'] == symbol:
-                client_erik.futures_cancel_order(orderId=open_orders_erik[0]['orderId'], symbol=symbol)
-            elif open_orders_erik[1]['type'] == "TAKE_PROFIT_MARKET" and open_orders_erik[1]['symbol'] == symbol:
-                client_erik.futures_cancel_order(orderId=open_orders_erik[1]['orderId'], symbol=symbol)
-    elif market_position == "TP":
-        open_orders = client.futures_get_open_orders(symbol=symbol)
-        open_orders_erik = client_erik.futures_get_open_orders(symbol=symbol)
-        if len(open_orders) == 1:
-            client.futures_cancel_all_open_orders(symbol=symbol)
-        else:
-            if open_orders[0]['type'] == "STOP_MARKET" and open_orders[0]['symbol'] == symbol:
-                client.futures_cancel_order(orderId=open_orders[0]['orderId'], symbol=symbol)
-            elif open_orders[1]['type'] == "STOP_MARKET" and open_orders[1]['symbol'] == symbol:
-                client.futures_cancel_order(orderId=open_orders[1]['orderId'], symbol=symbol)
-        if len(open_orders_erik) == 1:
-            client_erik.futures_cancel_all_open_orders(symbol=symbol)
-        else:
-            if open_orders_erik[0]['type'] == "STOP_MARKET" and open_orders_erik[0]['symbol'] == symbol:
-                client_erik.futures_cancel_order(orderId=open_orders_erik[0]['orderId'], symbol=symbol)
-            elif open_orders_erik[1]['type'] == "STOP_MARKET" and open_orders_erik[1]['symbol'] == symbol:
-                client_erik.futures_cancel_order(orderId=open_orders_erik[1]['orderId'], symbol=symbol)
+    # elif market_position == "SL":
+    #     open_orders = client.futures_get_open_orders(symbol=symbol)
+    #     open_orders_erik = client_erik.futures_get_open_orders(symbol=symbol)
+    #     if len(open_orders) == 1:
+    #         client.futures_cancel_all_open_orders(symbol=symbol)
+    #     else:
+    #         if open_orders[0]['type'] == "TAKE_PROFIT_MARKET" and open_orders[0]['symbol'] == symbol:
+    #             client.futures_cancel_order(orderId=open_orders[0]['orderId'], symbol=symbol)
+    #         elif open_orders[1]['type'] == "TAKE_PROFIT_MARKET" and open_orders[1]['symbol'] == symbol:
+    #             client.futures_cancel_order(orderId=open_orders[1]['orderId'], symbol=symbol)
+    #     if len(open_orders_erik) == 1:
+    #         client_erik.futures_cancel_all_open_orders(symbol=symbol)
+    #     else:
+    #         if open_orders_erik[0]['type'] == "TAKE_PROFIT_MARKET" and open_orders_erik[0]['symbol'] == symbol:
+    #             client_erik.futures_cancel_order(orderId=open_orders_erik[0]['orderId'], symbol=symbol)
+    #         elif open_orders_erik[1]['type'] == "TAKE_PROFIT_MARKET" and open_orders_erik[1]['symbol'] == symbol:
+    #             client_erik.futures_cancel_order(orderId=open_orders_erik[1]['orderId'], symbol=symbol)
+    # elif market_position == "TP":
+    #     open_orders = client.futures_get_open_orders(symbol=symbol)
+    #     open_orders_erik = client_erik.futures_get_open_orders(symbol=symbol)
+    #     if len(open_orders) == 1:
+    #         client.futures_cancel_all_open_orders(symbol=symbol)
+    #     else:
+    #         if open_orders[0]['type'] == "STOP_MARKET" and open_orders[0]['symbol'] == symbol:
+    #             client.futures_cancel_order(orderId=open_orders[0]['orderId'], symbol=symbol)
+    #         elif open_orders[1]['type'] == "STOP_MARKET" and open_orders[1]['symbol'] == symbol:
+    #             client.futures_cancel_order(orderId=open_orders[1]['orderId'], symbol=symbol)
+    #     if len(open_orders_erik) == 1:
+    #         client_erik.futures_cancel_all_open_orders(symbol=symbol)
+    #     else:
+    #         if open_orders_erik[0]['type'] == "STOP_MARKET" and open_orders_erik[0]['symbol'] == symbol:
+    #             client_erik.futures_cancel_order(orderId=open_orders_erik[0]['orderId'], symbol=symbol)
+    #         elif open_orders_erik[1]['type'] == "STOP_MARKET" and open_orders_erik[1]['symbol'] == symbol:
+    #             client_erik.futures_cancel_order(orderId=open_orders_erik[1]['orderId'], symbol=symbol)
         # print(open_orders)
         # print(open_orders[0]['type'])
         # print(len(open_orders))
