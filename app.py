@@ -39,9 +39,9 @@ def limit_order(side, quantity, quantity_erik, symbol, price, order_type=FUTURE_
     return limit_order_erik, limit_order
 
 
-def stop_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_STOP_MARKET):
+def stop_order(side, symbol, price, order_type=FUTURE_ORDER_TYPE_STOP_MARKET):
     try:
-        print(f"sending order {order_type} - {side} {quantity} {symbol}")
+        print(f"sending order {order_type} - {side} {symbol}")
         stop_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
                                                  stopPrice=price, workingType="MARK_PRICE")
         stop_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type,
@@ -54,9 +54,9 @@ def stop_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_STOP_
     return stop_order_erik, stop_order
 
 
-def take_profit_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_TAKE_PROFIT_MARKET):
+def take_profit_order(side, symbol, price, order_type=FUTURE_ORDER_TYPE_TAKE_PROFIT_MARKET):
     try:
-        print(f"sending order {order_type} - {side} {quantity} {symbol}")
+        print(f"sending order {order_type} - {side} {symbol}")
         take_profit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
                                                         stopPrice=price)
         take_profit_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type,
@@ -110,16 +110,16 @@ def webhook():
         client_erik.futures_cancel_all_open_orders(symbol=symbol)
         client.futures_cancel_all_open_orders(symbol=symbol)
         long_buy_response = limit_order("BUY", possize, possize_erik, symbol, open_price)
-        long_tp_response = take_profit_order("SELL", ordersize, symbol, tp_price)
-        long_sl_response = stop_order("SELL", ordersize, symbol, sl_price)
+        long_tp_response = take_profit_order("SELL", symbol, tp_price)
+        long_sl_response = stop_order("SELL", symbol, sl_price)
     elif market_position == "SHORT":
         possize = round(get_positionsize(open_price, sl_price, risk, cash, False), 3)
         possize_erik = round(get_positionsize(open_price, sl_price, risk, cash_erik, False), 3)
         client_erik.futures_cancel_all_open_orders(symbol=symbol)
         client.futures_cancel_all_open_orders(symbol=symbol)
         short_buy_response = limit_order("SELL", possize, possize_erik, symbol, open_price)
-        short_tp_response = take_profit_order("BUY", ordersize, symbol, tp_price)
-        short_sl_response = stop_order("BUY", ordersize, symbol, sl_price)
+        short_tp_response = take_profit_order("BUY", symbol, tp_price)
+        short_sl_response = stop_order("BUY", symbol, sl_price)
     elif market_position == "SL":
         open_orders = client.futures_get_open_orders(symbol=symbol)
         open_orders_erik = client_erik.futures_get_open_orders(symbol=symbol)
