@@ -1,4 +1,6 @@
 import json, config, config_erik
+
+from click import get_app_dir
 from flask import Flask, request, jsonify, render_template
 from binance.client import Client
 from binance.enums import *
@@ -11,18 +13,24 @@ margin = client.futures_account_balance()
 margin_erik = client_erik.futures_account_balance()
 
 
-# def get_positionsize(open_price, cash, leverage=25, risk=2):
-#     marge = ((cash * risk) / 100) * leverage
-#     possize = marge / open_price
-#     return possize
+def get_positionsize(entry_price, sl_price, risk, equity, long=True):
+    if not long:
+        sl_diff = sl_price - entry_price
+    elif long:
+        sl_diff = entry_price - sl_price
+    risk_equity = equity * risk
+    possize = risk_equity / sl_diff
+    return possize
 
 
-def limit_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_LIMIT, tif=TIME_IN_FORCE_GTC):
+def limit_order(side, quantity, quantity_erik, symbol, price, order_type=FUTURE_ORDER_TYPE_LIMIT,
+                tif=TIME_IN_FORCE_GTC):
     try:
         print(f"sending order {order_type} - {side} {quantity} {symbol}")
         limit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
                                                   price=price, timeinforce=tif)
-        limit_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, quantity=quantity,
+        limit_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type,
+                                                            quantity=quantity_erik,
                                                             price=price, timeinforce=tif)
     except Exception as e:
         print("an exception occured - {}".format(e))
@@ -36,8 +44,9 @@ def stop_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYPE_STOP_
         print(f"sending order {order_type} - {side} {quantity} {symbol}")
         stop_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
                                                  stopPrice=price, workingType="MARK_PRICE")
-        stop_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
-                                                 stopPrice=price, workingType="MARK_PRICE")
+        stop_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type,
+                                                           closePosition=True,
+                                                           stopPrice=price, workingType="MARK_PRICE")
     except Exception as e:
         print("an exception occured - {}".format(e))
         return False
@@ -50,13 +59,17 @@ def take_profit_order(side, quantity, symbol, price, order_type=FUTURE_ORDER_TYP
         print(f"sending order {order_type} - {side} {quantity} {symbol}")
         take_profit_order = client.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
                                                         stopPrice=price)
-        take_profit_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type, closePosition=True,
+        take_profit_order_erik = client_erik.futures_create_order(symbol=symbol, side=side, type=order_type,
+                                                                  closePosition=True,
                                                                   stopPrice=price)
     except Exception as e:
         print("an exception occured - {}".format(e))
         return False
 
     return take_profit_order_erik, take_profit_order
+
+
+sl_hit = 0
 
 
 @app.route('/')
@@ -79,27 +92,32 @@ def webhook():
     open_price = data['strategy']['entry_price']
     tp_price = data['strategy']['tp_price']
     sl_price = data['strategy']['sl_price']
-    ordersize = round(data['strategy']['market_position_size'], 3)
+    # ordersize = round(data['strategy']['market_position_size'], 3)
     long_buy_response = False
     short_buy_response = False
+    risk = 0.02
     symbol = "ETHUSDT"
-    # cash = float(margin[1]['balance'])
-    # cash_erik = float(margin_erik[1]['balance'])
+    cash = float(margin[1]['balance'])
+    cash_erik = float(margin_erik[1]['balance'])
     # print(cash)
     # print(cash_erik)
     # ordersize = round(get_positionsize(open_price, cash), 3)
     # ordersize_erik = round(get_positionsize(open_price, cash_erik), 3)
 
     if market_position == "LONG":
+        possize = round(get_positionsize(open_price, sl_price, risk, cash, True), 3)
+        possize_erik = round(get_positionsize(open_price, sl_price, risk, cash_erik, True), 3)
         client_erik.futures_cancel_all_open_orders(symbol=symbol)
         client.futures_cancel_all_open_orders(symbol=symbol)
-        long_buy_response = limit_order("BUY", ordersize, symbol, open_price)
+        long_buy_response = limit_order("BUY", possize, possize_erik, symbol, open_price)
         long_tp_response = take_profit_order("SELL", ordersize, symbol, tp_price)
         long_sl_response = stop_order("SELL", ordersize, symbol, sl_price)
     elif market_position == "SHORT":
+        possize = round(get_positionsize(open_price, sl_price, risk, cash, False), 3)
+        possize_erik = round(get_positionsize(open_price, sl_price, risk, cash_erik, False), 3)
         client_erik.futures_cancel_all_open_orders(symbol=symbol)
         client.futures_cancel_all_open_orders(symbol=symbol)
-        short_buy_response = limit_order("SELL", ordersize, symbol, open_price)
+        short_buy_response = limit_order("SELL", possize, possize_erik, symbol, open_price)
         short_tp_response = take_profit_order("BUY", ordersize, symbol, tp_price)
         short_sl_response = stop_order("BUY", ordersize, symbol, sl_price)
     elif market_position == "SL":
